@@ -8,6 +8,4 @@ The clone script uses rsync to clone an operating linux filesystem to any select
    It is your choice to use ext4, ext3, btrfs, or whatever...
 
 ### Dependencies
-fzf (the fuzzy finder)
-rsync
-Grub2
+fzf rsync grub2
