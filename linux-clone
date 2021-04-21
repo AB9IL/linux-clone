@@ -61,6 +61,7 @@ cp /etc/hosts $MYMOUNT/etc/hosts
 
 # Chroot into the newly written filesystem
 # Use the built-in chroot-manager script
+# MOFO Linux / Skywave Linux / Catbird Linux
 
 mount -o bind /run/ $MYMOUNT/run
 mount --bind /dev $MYMOUNT/dev
@@ -71,9 +72,13 @@ echo 'You will be the root user.'
 echo 'Make changes then "exit" to leave...'
 
 chroot $MYMOUNT update-grub
+
+# comment out and manually chroot if you don't have chroot-manager
 chroot $MYMOUNT chroot-manager enter
 
 # Unmount after exiting the chroot
 umount $MYMOUNT/run
 umount $MYMOUNT/proc
 umount $MYMOUNT/dev
+
+echo -e "\nEnd of script.  You may now boot your newly cloned system."
