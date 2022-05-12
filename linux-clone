@@ -7,21 +7,32 @@
 # (at your option) any later version. There is NO warranty; not even for
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-# IMPORTANT!  SELECT the correct values here or you will destroy 
+# IMPORTANT!  SELECT the correct values here or you will destroy
 # data you probably do not want to destroy!!!!
+clear
 echo "--- System Installer [RUN THIS WITH SUDO] ---"
-echo -e "\nClone your present system to a partition you select."
-echo -e "\nHit [Enter] to begin or [Ctrl + C] to quit..."
+echo -e "\nClone this live system to a partition you select."
+echo -e "\n\nYou should format the partition or drive FIRST."
+echo -e "\n\nHit [Enter] to install or [Ctrl + C] to quit..."
 read line
+clear
 
+# list existing partitions
 export PARTITION=$(fdisk -l | awk '{print $1}' | grep '^/dev/' | \
     fzf --header="Select Partition" | xargs -I {} echo "{}")
+export MYMOUNT="/mnt"
+export MYUUID=$(echo $(lsblk -no UUID $PARTITION))
+export MYDEV=$(echo ${PARTITION//[0-9]/})
 
 # quit if nothing selected
 [[ -z "$PARTITION" ]] && echo "Exiting. No partition selected." && exit 0
 
-echo "Are you sure that you want to install this filesystem
-onto $PARTITION?"
+
+echo -e "You have chosen partition:\n"
+echo "     $PARTITION"
+echo -e "\n\nAre you sure that you want to install
+this filesystem onto $PARTITION?"
+echo ""
 echo 'Please answer "yes" or "no"'
 read line
 case "$line" in
@@ -29,56 +40,51 @@ case "$line" in
     *) echo '"yes" not received, exiting the script.'; exit 0 ;;
 esac
 
-# mount the partition and set variables 
-mount $PARTITION /mnt
-export MYMOUNT="/mnt"
-export MYUUID=$(echo $(lsblk -no UUID $PARTITION))
-export MYDEV=$(echo ${PARTITION//[0-9]/})
+echo -e "\nWriting the filesystem, please stand by..."
+
+# get the partition format
+export FMT="$(df -T $PARTITION | grep "$PARTITION" | awk '{printf $2"\n"}')"
+
+# mount the partition and clear the space
+mount $PARTITION $MYMOUNT
+
+# clone the running filesystem
+rsync -axHAWXS \
+    --delete \
+    --numeric-ids \
+    --info=progress2 \
+    --exclude='/cdrom' \
+    --exclude='/media' \
+    --exclude='/home/*/.gvfs' \
+    --exclude='/home/*/.local/share/Trash' \
+    --exclude='/var/run/*' \
+    --exclude='/var/lock/*' \
+    --exclude='/lib/modules/*/volatile/.mounted' \
+    --exclude='/var/cache/apt/archives/*' \
+    --exclude='/home/*/.mozilla/firefox/*/Cache' \
+    --exclude='/home/*/.cache/chromium' \
+    --exclude='home/*/.thumbnails' \
+    --exclude Cache --exclude cache \
+    / $MYMOUNT/  2>> ~/rsync.err
 
 # install grub
 grub-install --force --no-floppy --boot-directory=$MYMOUNT/boot $MYDEV
 
-# install the filesystem
-rsync -axHAWXS \
-  --delete \
-  --numeric-ids \
-  --info=progress2 \
-  --exclude='/cdrom' \
-  --exclude='/home/*/.gvfs' \
-  --exclude='/home/*/.local/share/Trash' \
-  --exclude='/var/run/*' \
-  --exclude='/var/lock/*' \
-  --exclude='/lib/modules/*/volatile/.mounted' \
-  --exclude='/var/cache/apt/archives/*' \
-  --exclude='/home/*/.mozilla/firefox/*/Cache' \
-  --exclude='/home/*/.cache/chromium' \
-  --exclude='home/*/.thumbnails' \
-  --exclude Cache --exclude cache \
-  / $MYMOUNT/ > ~/rsync.out 2> ~/rsync.err
-
-echo "UUID=$MYUUID /   ext4    discard,noatime,nodiratime,errors=remount-ro 0 1" > $MYMOUNT/etc/fstab
+echo "UUID=$MYUUID /   $FMT    discard,noatime,nodiratime,errors=remount-ro 0 1" > $MYMOUNT/etc/fstab
 cp /etc/hosts $MYMOUNT/etc/hosts
 
-# Chroot into the newly written filesystem
-# Use the built-in chroot-manager script
-# MOFO Linux / Skywave Linux / Catbird Linux
-
+# Mount the newly written filesystem
+echo 'Now entering the new filesystem...'
 mount -o bind /run/ $MYMOUNT/run
 mount --bind /dev $MYMOUNT/dev
 mount --bind /proc $MYMOUNT/proc
 
-echo 'Now entering the new filesystem...'
-echo 'You will be the root user.'
-echo 'Make changes then "exit" to leave...'
-
+# Chroot into the newly written filesystem
+echo 'Updating Grub...'
 chroot $MYMOUNT update-grub
 
-# comment out and manually chroot if you don't have chroot-manager
-chroot $MYMOUNT chroot-manager enter
-
+echo 'Exiting...'
 # Unmount after exiting the chroot
-umount $MYMOUNT/run
 umount $MYMOUNT/proc
 umount $MYMOUNT/dev
-
-echo -e "\nEnd of script.  You may now boot your newly cloned system."
+umount $MYMOUNT/run
