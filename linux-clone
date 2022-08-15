@@ -49,22 +49,28 @@ export FMT="$(df -T $PARTITION | grep "$PARTITION" | awk '{printf $2"\n"}')"
 mount $PARTITION $MYMOUNT
 
 # clone the running filesystem
-rsync -axHAWXS \
+rsync -aAxXHAWSP \
+    --inplace \
     --delete \
-    --numeric-ids \
     --info=progress2 \
-    --exclude='/cdrom' \
-    --exclude='/media' \
+    --numeric-ids \
+    --exclude='/cdrom/*' \
+    --exclude='/dev/*' \
     --exclude='/home/*/.gvfs' \
     --exclude='/home/*/.local/share/Trash' \
-    --exclude='/var/run/*' \
-    --exclude='/var/lock/*' \
+    --exclude='/home/*/.thumbnails' \
     --exclude='/lib/modules/*/volatile/.mounted' \
-    --exclude='/var/cache/apt/archives/*' \
-    --exclude='/home/*/.mozilla/firefox/*/Cache' \
-    --exclude='/home/*/.cache/chromium' \
-    --exclude='home/*/.thumbnails' \
-    --exclude Cache --exclude cache \
+    --exclude='/media/*' \
+    --exclude='/mnt/*' \
+    --exclude='/proc/*' \
+    --exclude='/run/*' \
+    --exclude='/sys/*' \
+    --exclude='/tmp/*' \
+    --exclude='/var/lock/*' \
+    --exclude='/var/run/*' \
+    --exclude='*/Cache/*'
+    --exclude='*/cache/*' \
+    --exclude='*/.cache/*' \
     / $MYMOUNT/  2>> ~/rsync.err
 
 # install grub
