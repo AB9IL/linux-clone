@@ -84,6 +84,7 @@ echo 'Now entering the new filesystem...'
 mount -o bind /run/ $MYMOUNT/run
 mount --bind /dev $MYMOUNT/dev
 mount --bind /proc $MYMOUNT/proc
+mount --bind /sys $MYMOUNT/sys
 
 # Chroot into the newly written filesystem
 echo 'Updating Grub...'
