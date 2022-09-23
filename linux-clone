@@ -68,7 +68,7 @@ rsync -aAxXHAWSP \
     --exclude='/tmp/*' \
     --exclude='/var/lock/*' \
     --exclude='/var/run/*' \
-    --exclude='*/Cache/*'
+    --exclude='*/Cache/*' \
     --exclude='*/cache/*' \
     --exclude='*/.cache/*' \
     / $MYMOUNT/  2>> ~/rsync.err
