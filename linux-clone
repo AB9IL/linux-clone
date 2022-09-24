@@ -68,7 +68,7 @@ rsync -aAxXHAWSP \
     --exclude='/tmp/*' \
     --exclude='/var/lock/*' \
     --exclude='/var/run/*' \
-    --exclude='*/Cache/*'
+    --exclude='*/Cache/*' \
     --exclude='*/cache/*' \
     --exclude='*/.cache/*' \
     / $MYMOUNT/  2>> ~/rsync.err
@@ -84,6 +84,7 @@ echo 'Now entering the new filesystem...'
 mount -o bind /run/ $MYMOUNT/run
 mount --bind /dev $MYMOUNT/dev
 mount --bind /proc $MYMOUNT/proc
+mount --bind /sys $MYMOUNT/sys
 
 # Chroot into the newly written filesystem
 echo 'Updating Grub...'
