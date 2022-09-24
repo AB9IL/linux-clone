@@ -92,6 +92,7 @@ chroot $MYMOUNT update-grub
 
 echo 'Exiting...'
 # Unmount after exiting the chroot
+umount $MYMOUNT/sys
 umount $MYMOUNT/proc
 umount $MYMOUNT/dev
 umount $MYMOUNT/run
