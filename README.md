@@ -13,3 +13,13 @@ This script does not format any partitions.
 
 ### Dependencies
 fzf rsync grub2
+
+
+### Usage
+```bash
+linux-clone
+```
+
+
+### Warning!
+Make sure that you select the correct partition!  This script will write to whichever one you select.
