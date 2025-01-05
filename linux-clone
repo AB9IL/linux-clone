@@ -12,7 +12,7 @@
 clear
 echo "--- System Installer [RUN THIS WITH SUDO] ---"
 echo -e "\nClone this live system to a partition you select."
-echo -e "\n\nYou should format the partition or drive FIRST."
+echo -e "\n\nYou should manually format the partition or drive FIRST."
 echo -e "\n\nHit [Enter] to install or [Ctrl + C] to quit..."
 read line
 clear
@@ -45,6 +45,25 @@ echo -e "\nWriting the filesystem, please stand by..."
 # get the partition format
 export FMT="$(df -T $PARTITION | grep "$PARTITION" | awk '{printf $2"\n"}')"
 
+# Important:
+# When an ext4 filesystem has the metadata_csum_seed feature enabled, 
+# then grub-install will not work and report this grub-install: 
+# error: unknown filesystem error.
+# See Debian bug 866603 
+#
+# Test for the problem (substitute proper drive for"sda1"):
+#   grub-probe --target=fs --device /dev/sda1 
+#
+# It will give the same error if sda1 has that feature enabled.
+# You can also check using tune2fs:
+#   tune2fs -l /dev/sda1 | grep metadata_csum_seed
+#
+# Disable the feature with:
+# tune2fs -O ^metadata_csum_seed /dev/sda1
+
+# Disable metadata_csum_seed feature
+tune2fs -O ^metadata_csum_seed $PARTITION
+
 # mount the partition and clear the space
 mount $PARTITION $MYMOUNT
 
@@ -74,7 +93,12 @@ rsync -aAxXHAWSP \
     / $MYMOUNT/  2>> ~/rsync.err
 
 # install grub
-grub-install --force --no-floppy --boot-directory=$MYMOUNT/boot $MYDEV
+grub-install \
+    --force \
+    --no-floppy \
+    --root-directory=$MYMOUNT \
+    --boot-directory=$MYMOUNT/boot \
+    $MYDEV
 
 echo "UUID=$MYUUID /   $FMT    discard,noatime,nodiratime,errors=remount-ro 0 1" > $MYMOUNT/etc/fstab
 cp /etc/hosts $MYMOUNT/etc/hosts
